@@ -563,7 +563,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
 **`k8s/services/data-product-api.yaml`:**
 - ServiceAccount (name: `data-product-api`, namespace: `{ns_backend}`)
 - Deployment:
-  - Image: `{registry}data-product-api:0.0.1`
+  - Image: `{registry}{image_prefix}-data-product-api:0.0.1`
   - Port: 8080
   - GRAPH_DB_URL env var: `http://graph-db-mock.{ns_backend}.svc.cluster.local:8081`
   - Readiness probe: GET /health port 8080
@@ -576,7 +576,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
 **`k8s/services/graph-db-mock.yaml`:**
 - ServiceAccount (name: `graph-db-mock`, namespace: `{ns_backend}`)
 - Deployment:
-  - Image: `{registry}graph-db-mock:0.0.1`
+  - Image: `{registry}{image_prefix}-graph-db-mock:0.0.1`
   - Port: 8081
   - Readiness probe: GET /health port 8081
   - Resources: requests cpu 100m/memory 128Mi, limits cpu 200m/memory 256Mi
