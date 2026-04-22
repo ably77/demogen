@@ -41,8 +41,11 @@ If the path exists, write into it (preserve `.git/`, `.gitattributes`, etc.). If
 > - **FERPA** -- Student ID patterns, SSN
 > - **Custom** -- Provide your own regex patterns and descriptions
 
-### Question 7: Docker Registry
+### Question 7: Docker Registry & Builder
 > Where should images be pushed? (e.g., `ably7/`, `gcr.io/solo-demos/`)
+>
+> What Docker buildx builder should be used? Run `docker buildx ls` to see available builders.
+> (e.g., `ly-builder`, `mybuilder`, `desktop-linux` — avoid `default` if using non-default Docker contexts like colima)
 
 ### Question 8: Namespace Names
 > What should the Kubernetes namespaces be named?
@@ -66,6 +69,7 @@ After all questions are answered, confirm the configuration with the SE before p
 > - Role: {advisor_role}
 > - Compliance: {regime}
 > - Registry: {registry}
+> - Builder: {docker_builder}
 > - Namespaces: {ns_backend}, {ns_frontend}
 > - Ext-authz: {yes/no} ({description if yes})
 >
@@ -95,7 +99,7 @@ From the SE's answers, derive these template variables:
 | `{{CHATBOT_HOST}}` | `{entity_lower}.glootest.com` (e.g., "patient.glootest.com") -- ask SE to confirm or override |
 | `{{GRAFANA_HOST}}` | Default `grafana.glootest.com` -- ask SE to confirm or override |
 | `{{UI_HOST}}` | Default `ui.glootest.com` -- ask SE to confirm or override |
-| `{{DOCKER_BUILDER}}` | Default `default` -- ask SE if they have a named buildx builder |
+| `{{DOCKER_BUILDER}}` | Builder name from Q7 (e.g., "ly-builder"). Run `docker buildx ls` to list available builders if the SE is unsure. Avoid `default` when using non-default Docker contexts (colima, remote engines). |
 
 Show the derived variables to the SE for confirmation before continuing.
 
@@ -739,7 +743,26 @@ Generate `EnterpriseAgentgatewayPolicy` with compliance-specific guardrails. Ref
 
 Target the HTTPRoute named `{route_name}`.
 
-**Always include these sections:**
+**CRITICAL: CRD structure** — Guardrails MUST be nested under `spec.backend.ai.promptGuard`. The top-level structure is:
+
+```yaml
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: {route_name}
+  backend:
+    ai:
+      promptGuard:
+        request:
+        - regex: ...    # request-side guardrails (PII, injection, credentials)
+        response:
+        - regex: ...    # response-side guardrails (PII masking)
+```
+
+Do NOT use `spec.prompt` or `spec.response` — those are invalid fields. Always use `spec.backend.ai.promptGuard.request` and `spec.backend.ai.promptGuard.response`.
+
+**Always include these sections under `promptGuard.request`:**
 
 1. **PII Detection** (compliance-specific):
    - Regex action: Reject
@@ -774,9 +797,10 @@ Target the HTTPRoute named `{route_name}`.
        statusCode: 422
    ```
 
+**Under `promptGuard.response`:**
+
 4. **Response PII masking** (same for all regimes):
    ```yaml
-   response:
    - regex:
        action: Mask
        builtins:
@@ -787,7 +811,12 @@ Target the HTTPRoute named `{route_name}`.
        message: "Response filtered: PII redacted from model output."
    ```
 
-**Compliance-specific PII detection:**
+**IMPORTANT: Request-side builtin caveats:**
+- `Email` and `PhoneNumber` builtins are TOO AGGRESSIVE for request-side detection — they match patterns in the full JSON payload (URLs, tool descriptions, port numbers) and will block legitimate prompts. Only use `CreditCard` and `Ssn` builtins on request-side.
+- `Email`, `PhoneNumber` are safe on response-side (masking LLM output) since the response content is plain text.
+- The CVV pattern `\\b\\d{3,4}\\s*$` is too broad — it matches any 3-4 digit number at end of text. Do NOT include it.
+
+**Compliance-specific PII detection (under `promptGuard.request`):**
 
 For **HIPAA**:
 ```yaml
@@ -796,8 +825,6 @@ For **HIPAA**:
     builtins:
     - CreditCard
     - Ssn
-    - Email
-    - PhoneNumber
     matches:
     - "\\bMRN[-_]?\\d{6,10}\\b"
     - "(?i)\\b(date of birth|dob)\\s*[:=]?\\s*\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b"
@@ -814,7 +841,6 @@ For **PCI**:
     - CreditCard
     - Ssn
     matches:
-    - "\\b\\d{3,4}\\s*$"
     - "(?i)\\b(routing|aba)\\s*(number|#)?\\s*[:=]?\\s*\\d{9}\\b"
     - "(?i)\\baccount\\s*(number|#|no\\.?)\\s*[:=]?\\s*\\d{8,17}\\b"
   response:
@@ -829,10 +855,8 @@ For **FERPA**:
     builtins:
     - CreditCard
     - Ssn
-    - Email
-    - PhoneNumber
   response:
-    message: "Request blocked: personally identifiable information (PII) detected. Do not include SSNs, credit cards, emails, or phone numbers in prompts. This policy enforces FERPA compliance."
+    message: "Request blocked: personally identifiable information (PII) detected. Do not include SSNs or credit cards in prompts. This policy enforces FERPA compliance."
     statusCode: 422
 ```
 
