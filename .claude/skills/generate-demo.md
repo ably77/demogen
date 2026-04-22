@@ -18,6 +18,13 @@ Ask these questions ONE AT A TIME. Wait for the answer before asking the next qu
 
 If the path exists, write into it (preserve `.git/`, `.gitattributes`, etc.). If it doesn't exist, create it.
 
+### Question 1b: Cluster Setup
+> How many Kubernetes clusters will be used?
+> - **1 cluster** — Single-cluster mode. The core demo (chatbot, mesh, agent gateway) works fully. The Multi-Cluster failover page will be hidden.
+> - **2 clusters** (default) — Full multicluster support with failover demo. Cluster2 is auto-detected at install time; if not reachable, install.sh falls back to single-cluster mode automatically.
+
+Note: Even if the SE chooses 2 clusters, the generated install.sh auto-detects cluster2 availability and gracefully degrades to single-cluster mode. This question determines whether the Multi-Cluster demo page is generated.
+
 ### Question 2: Organization
 > What organization is this demo for?
 > - **Full name** (e.g., "Kaiser Permanente")
@@ -68,6 +75,7 @@ After all questions are answered, confirm the configuration with the SE before p
 > - Entity: {entity_name} with fields: {fields}
 > - Role: {advisor_role}
 > - Compliance: {regime}
+> - Clusters: {1 or 2} ({single-cluster / multicluster with failover})
 > - Registry: {registry}
 > - Builder: {docker_builder}
 > - Namespaces: {ns_backend}, {ns_frontend}
@@ -410,7 +418,9 @@ Must include these sections:
 
 ---
 
-### 6c2: `demo-ui/pages/2_Multi_Cluster.py`
+### 6c2: `demo-ui/pages/2_Multi_Cluster.py` (conditional — ONLY if SE chose 2 clusters in Q1b)
+
+**Skip this file entirely if the SE chose single-cluster mode.**
 
 Generate the multi-cluster failover demo page following the enrollment-agent's `pages/2_Multi_Cluster.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/demo-ui/pages/2_Multi_Cluster.py`.
 
@@ -1088,18 +1098,19 @@ Also add `kubectl apply -f k8s/gateway/ext-authz.yaml` to the `deploy_workloads(
 
 Generate a complete workshop document following the enrollment-agent's `workshop.md` structure. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/workshop.md`.
 
-The workshop should have 7 sections plus cleanup, reframed for the target vertical:
+The workshop should have 7 sections plus cleanup, reframed for the target vertical. If single-cluster mode was chosen, omit multi-cluster sections (section 2's multi-cluster connectivity and linking) and note that the demo runs on a single cluster.
 
 1. **Prerequisites & Environment Setup**
-   - Cluster setup (2 clusters), CLI tools, license/API keys
+   - Cluster setup: 1 cluster (single-cluster mode) or 2 clusters (multicluster mode). Note that install.sh auto-detects cluster2 and gracefully falls back to single-cluster if not available.
+   - CLI tools, license/API keys
    - Build container images commands using the generated registry/image names
    - Verification checkpoint
 
 2. **Istio Ambient Mesh**
-   - Install on both clusters with shared root CA
+   - Install on cluster1 (and cluster2 if multicluster mode) with shared root CA
    - Deploy demo workloads (using correct namespace and service names)
    - Verify mTLS enrollment
-   - Multi-cluster connectivity (linking clusters)
+   - Multi-cluster connectivity and linking (ONLY if multicluster mode — omit entirely for single-cluster)
    - Deploy waypoint for L7 traffic management
    - AuthorizationPolicy -- Zero Trust (using the compliance regime framing)
 
@@ -1158,7 +1169,7 @@ Must include:
   {Entity} User
     -> Ingress Gateway (agentgateway-system, LoadBalancer:80, in mesh)
       -> {APP_TITLE} Chatbot (Streamlit, {ns_frontend} namespace)
-        -> Agent Gateway (agentgateway-system, ClusterIP:8080) -> LLM Provider (OpenAI)
+        -> Agent Gateway (agentgateway-system, LoadBalancer:8080) -> LLM Provider (OpenAI)
         -> Data Product API ({ns_backend} namespace, through mesh with mTLS)
           -> Graph DB Mock ({ns_backend} namespace, through waypoint)
     -> Grafana (monitoring namespace)
@@ -1202,6 +1213,7 @@ cd {output_path}
 python3 -c "import py_compile; py_compile.compile('demo-ui/Homepage.py', doraise=True)"
 python3 -c "import py_compile; py_compile.compile('demo-ui/utils/config.py', doraise=True)"
 python3 -c "import py_compile; py_compile.compile('demo-ui/pages/1_Mesh_Policies.py', doraise=True)"
+# Only if multicluster mode:
 python3 -c "import py_compile; py_compile.compile('demo-ui/pages/2_Multi_Cluster.py', doraise=True)"
 python3 -c "import py_compile; py_compile.compile('services/data-product-api/app.py', doraise=True)"
 python3 -c "import py_compile; py_compile.compile('services/graph-db-mock/app.py', doraise=True)"
