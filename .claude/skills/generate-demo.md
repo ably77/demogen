@@ -1302,7 +1302,7 @@ Must include:
   ```
 - **Project Structure** -- File tree with descriptions
 - **Quick Start** -- Prerequisites, install, /etc/hosts, access URLs
-- **Building and Deploying** -- build-and-redeploy.sh usage, Docker build context note
+- **Building and Deploying** -- `build-all.sh` for first-time image builds (all services), `build-and-redeploy.sh` for chatbot-only rebuilds, Docker build context note
 - **Key Design Decisions**:
   - Entity ID format (underscores not dashes, explain why)
   - Waypoint + AuthorizationPolicy (targetRefs, L7 vs L4)
@@ -1314,7 +1314,7 @@ Must include:
   - (If MCP enabled) MCP client runs via `asyncio.run()` in Streamlit — each discovery/call is a synchronous wrapper around async MCP client
 - **Branding / Configuration** -- env var table (include `MCP_URL` if MCP enabled)
 - **Adding New Features** -- pages, entities, policies, guardrails, MCP
-- **Testing** -- pytest commands for data-product-api and graph-db-mock
+- **Testing** -- pytest commands for data-product-api and graph-db-mock. Note: MCP server tests require Python 3.10+ (the `mcp` package does not support 3.9)
 
 ### 6p: MCP Server (conditional -- ONLY if MCP enabled)
 
@@ -1395,6 +1395,6 @@ All should pass with no errors.
 > **Next steps:**
 > 1. `cd {output_path}`
 > 2. Review the key files: `Homepage.py`, `config.py`, `graph-db-mock/app.py`, `workshop.md`
-> 3. Build container images (see `build-and-redeploy.sh` or CLAUDE.md)
+> 3. Build ALL container images: `./build-all.sh` (must complete before install)
 > 4. Run `./install.sh` to deploy
 > 5. Add `/etc/hosts` entries as shown by the install script

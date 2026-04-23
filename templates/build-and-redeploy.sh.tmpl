@@ -9,6 +9,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 CTX=${KUBECONTEXT_CLUSTER1:-cluster1}
+BUILDER="{{DOCKER_BUILDER}}"
+
+# --- Verify buildx builder is healthy ---
+if ! docker buildx inspect "$BUILDER" &>/dev/null; then
+  echo "Builder '$BUILDER' not found — creating it..."
+  docker buildx create --name "$BUILDER" --driver docker-container
+fi
+if ! docker buildx inspect "$BUILDER" 2>/dev/null | grep -q "Status:.*running"; then
+  docker buildx inspect "$BUILDER" --bootstrap &>/dev/null
+fi
 
 # Auto-increment version from current manifest
 CURRENT=$(grep 'image: {{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:' k8s/services/{{CHATBOT_SERVICE_NAME}}.yaml | sed 's/.*://')
@@ -26,7 +36,7 @@ IMAGE="{{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:${VERSION}"
 echo "=== Building and deploying $IMAGE ==="
 
 # Build and push
-docker buildx build --builder {{DOCKER_BUILDER}} \
+docker buildx build --builder "$BUILDER" \
   --platform linux/amd64,linux/arm64 \
   -t "$IMAGE" --push \
   -f demo-ui/Dockerfile .
