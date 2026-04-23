@@ -667,10 +667,14 @@ deploy_workloads() {
 
   kubectl apply -f k8s/gateway/backend.yaml -f k8s/gateway/route.yaml \
     -f k8s/gateway/guardrails.yaml -f k8s/gateway/rate-limit.yaml \
-    -f k8s/gateway/abac-ext-authz.yaml \
     --context $ctx
 
-  kubectl rollout status deploy/abac-ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
+  # --- Ext-authz server (if ext-authz.yaml exists) ---
+  if [ -f k8s/gateway/ext-authz.yaml ]; then
+    echo "=== Deploying ext-authz server ==="
+    kubectl apply -f k8s/gateway/ext-authz.yaml --context $ctx
+    kubectl rollout status deploy/ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
+  fi
 
   # --- MCP backend (if mcp-backend.yaml exists) ---
   if [ -f k8s/gateway/mcp-backend.yaml ]; then

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Quick rebuild and deploy the enrollment chatbot.
+# Quick rebuild and deploy the chatbot.
 # Usage: ./deploy.sh [version]
 # Example: ./deploy.sh 0.0.7
 
@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 CTX=${KUBECONTEXT_CLUSTER1:-cluster1}
 
 # Auto-increment version from current manifest
-CURRENT=$(grep 'image: {{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:' k8s/services/enrollment-chatbot.yaml | sed 's/.*://')
+CURRENT=$(grep 'image: {{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:' k8s/services/{{CHATBOT_SERVICE_NAME}}.yaml | sed 's/.*://')
 if [ -n "$1" ]; then
   VERSION="$1"
 else
@@ -32,15 +32,15 @@ docker buildx build --builder {{DOCKER_BUILDER}} \
   -f demo-ui/Dockerfile .
 
 # Update manifest
-sed -i '' "s|{{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:.*|{{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:${VERSION}|" k8s/services/enrollment-chatbot.yaml
+sed -i '' "s|{{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:.*|{{REGISTRY}}{{IMAGE_PREFIX}}-chatbot:${VERSION}|" k8s/services/{{CHATBOT_SERVICE_NAME}}.yaml
 
 # Deploy
-kubectl apply -f k8s/services/enrollment-chatbot.yaml --context $CTX
-kubectl rollout status deploy/enrollment-chatbot -n {{NS_FRONTEND}} --watch --timeout=120s --context $CTX
+kubectl apply -f k8s/services/{{CHATBOT_SERVICE_NAME}}.yaml --context $CTX
+kubectl rollout status deploy/{{CHATBOT_SERVICE_NAME}} -n {{NS_FRONTEND}} --watch --timeout=120s --context $CTX
 
 # Restart port-forward
 kill $(lsof -ti:8501) 2>/dev/null || true
-kubectl port-forward svc/enrollment-chatbot -n {{NS_FRONTEND}} 8501:8501 --context $CTX &>/dev/null &
+kubectl port-forward svc/{{CHATBOT_SERVICE_NAME}} -n {{NS_FRONTEND}} 8501:8501 --context $CTX &>/dev/null &
 sleep 2
 
 echo ""

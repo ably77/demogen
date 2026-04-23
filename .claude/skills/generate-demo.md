@@ -195,6 +195,7 @@ Read each `.tmpl` file from the demogen `templates/` directory, substitute ALL `
 | `templates/install.sh.tmpl` | `install.sh` (make executable: `chmod +x`) |
 | `templates/cleanup.sh.tmpl` | `cleanup.sh` (make executable: `chmod +x`) |
 | `templates/build-and-redeploy.sh.tmpl` | `build-and-redeploy.sh` (make executable: `chmod +x`) |
+| `templates/build-all.sh.tmpl` | `build-all.sh` (make executable: `chmod +x`) |
 | `templates/k8s/gateway/mcp-backend.yaml.tmpl` | `k8s/gateway/mcp-backend.yaml` | (ONLY if MCP enabled) |
 
 After writing each file, verify no `{{` placeholders remain:
@@ -221,7 +222,7 @@ These files are written from scratch based on the SE's answers. Use the enrollme
 
 ### 6a: `demo-ui/utils/config.py`
 
-Generate a config module following the enrollment-agent's `demo-ui/utils/config.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/demo-ui/utils/config.py`.
+Generate a config module following the enrollment-agent's `demo-ui/utils/config.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/demo-ui/utils/config.py`.
 
 Must include:
 
@@ -258,7 +259,7 @@ Additional config.py requirements if MCP is enabled:
 
 ### 6b: `demo-ui/Homepage.py`
 
-Generate the main Streamlit chatbot page following the enrollment-agent's `Homepage.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/demo-ui/Homepage.py`.
+Generate the main Streamlit chatbot page following the enrollment-agent's `Homepage.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/demo-ui/Homepage.py`.
 
 **Structure (must follow this exact order):**
 
@@ -307,7 +308,7 @@ render_sidebar()
    - Sidebar checkbox that applies/removes `EnterpriseAgentgatewayPolicy` for the generic gRPC ext-authz
    - Check cluster state with `run_kubectl` to detect if the policy is currently active
    - When enabled, show explanatory text about how to test with/without the `x-ext-authz: allow` header
-   - The policy YAML uses the route name from `{{ROUTE_NAME}}` and references `ext-authz` service on port 4444
+   - The policy YAML uses the route name from `{{ROUTE_NAME}}` and references `grpc-ext-authz` service on port 4444
    - Include `_enable_extauth()` and `_disable_extauth()` helper functions
    - Pattern to follow for the EnterpriseAgentgatewayPolicy:
    ```python
@@ -327,7 +328,7 @@ render_sidebar()
            '  traffic:\n'
            '    extAuth:\n'
            '      backendRef:\n'
-           '        name: ext-authz\n'
+           '        name: grpc-ext-authz\n'
            '        namespace: agentgateway-system\n'
            '        port: 4444\n'
            '      grpc: {}\n'
@@ -458,7 +459,7 @@ render_sidebar()
 
 ### 6c: `demo-ui/pages/1_Mesh_Policies.py`
 
-Generate the mesh policies demo page following the enrollment-agent's `pages/1_Mesh_Policies.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/demo-ui/pages/1_Mesh_Policies.py`.
+Generate the mesh policies demo page following the enrollment-agent's `pages/1_Mesh_Policies.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/demo-ui/pages/1_Mesh_Policies.py`.
 
 Must include these sections:
 
@@ -507,7 +508,7 @@ Must include these sections:
 
 **Skip this file entirely if the SE chose single-cluster mode.**
 
-Generate the multi-cluster failover demo page following the enrollment-agent's `pages/2_Multi_Cluster.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/demo-ui/pages/2_Multi_Cluster.py`.
+Generate the multi-cluster failover demo page following the enrollment-agent's `pages/2_Multi_Cluster.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/demo-ui/pages/2_Multi_Cluster.py`.
 
 Must include:
 
@@ -554,7 +555,7 @@ All descriptions should be domain-framed using the entity name and namespace nam
 
 ### 6d: `services/data-product-api/app.py`
 
-Generate the FastAPI data product API following the enrollment-agent's `services/data-product-api/app.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/services/data-product-api/app.py`.
+Generate the FastAPI data product API following the enrollment-agent's `services/data-product-api/app.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/services/data-product-api/app.py`.
 
 Must include:
 
@@ -574,7 +575,7 @@ Must include:
 
 ### 6e: `services/graph-db-mock/app.py` + `Dockerfile` + `requirements.txt`
 
-Generate the mock graph DB service following the enrollment-agent's `services/graph-db-mock/app.py` pattern. Reference the enrollment-agent file at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/services/graph-db-mock/app.py`.
+Generate the mock graph DB service following the enrollment-agent's `services/graph-db-mock/app.py` pattern. Reference the enrollment-agent file at `https://github.com/ably77/enrollment-agent/blob/main/services/graph-db-mock/app.py`.
 
 **`app.py`** must include:
 
@@ -639,7 +640,7 @@ metadata:
 
 ### 6g: `k8s/services/*.yaml`
 
-Generate 3 service manifests following the enrollment-agent's patterns. Reference the enrollment-agent files at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/services/`.
+Generate 3 service manifests following the enrollment-agent's patterns. Reference the enrollment-agent files at `https://github.com/ably77/enrollment-agent/blob/main/k8s/services/`.
 
 **`k8s/services/{chatbot_service_name}.yaml`:**
 - ServiceAccount (name: `{chatbot_service_name}`, namespace: `{ns_frontend}`)
@@ -695,7 +696,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
 
 ### 6h: `k8s/mesh/*.yaml`
 
-Generate mesh authorization policies following the enrollment-agent's patterns. Reference files at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/mesh/`.
+Generate mesh authorization policies following the enrollment-agent's patterns. Reference files at `https://github.com/ably77/enrollment-agent/blob/main/k8s/mesh/`.
 
 **`k8s/mesh/deny-all.yaml`:**
 Default deny for both namespaces. Comment references the compliance regime (e.g., "HIPAA boundary" instead of "FERPA boundary").
@@ -867,7 +868,7 @@ spec:
 
 ### 6i: `k8s/gateway/guardrails.yaml`
 
-Generate `EnterpriseAgentgatewayPolicy` with compliance-specific guardrails. Reference the enrollment-agent's guardrails at `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/gateway/guardrails.yaml`.
+Generate `EnterpriseAgentgatewayPolicy` with compliance-specific guardrails. Reference the enrollment-agent's guardrails at `https://github.com/ably77/enrollment-agent/blob/main/k8s/gateway/guardrails.yaml`.
 
 Target the HTTPRoute named `{route_name}`.
 
@@ -994,7 +995,7 @@ For **Custom**: Use the SE's provided regex patterns and descriptions.
 
 ### 6j: `k8s/gateway/rate-limit.yaml`
 
-Generate token-level rate limiting config following the enrollment-agent's pattern. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/gateway/rate-limit.yaml`.
+Generate token-level rate limiting config following the enrollment-agent's pattern. Reference `https://github.com/ably77/enrollment-agent/blob/main/k8s/gateway/rate-limit.yaml`.
 
 Use `{route_name}` as the descriptor value and in the resource names. Structure:
 
@@ -1040,7 +1041,7 @@ spec:
 
 ### 6k: `k8s/gateway/ingress.yaml`
 
-Generate the ingress gateway config. This is generic infrastructure with no demo-specific references. Copy the pattern exactly from the enrollment-agent. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/gateway/ingress.yaml`.
+Generate the ingress gateway config. This is generic infrastructure with no demo-specific references. Copy the pattern exactly from the enrollment-agent. Reference `https://github.com/ably77/enrollment-agent/blob/main/k8s/gateway/ingress.yaml`.
 
 ```yaml
 # Ingress gateway -- exposes user-facing services via hostname-based routing.
@@ -1152,7 +1153,7 @@ spec:
 
 ### 6m: `k8s/gateway/ext-authz.yaml` (conditional -- ONLY if SE enabled ext-authz in Q9)
 
-Generate the generic gRPC ext-authz deployment + service. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/k8s/gateway/abac-ext-authz.yaml` for structure, but use the generic `ably7/grpc-ext-authz:latest` image.
+Generate the generic gRPC ext-authz deployment + service. Reference https://github.com/ably77/grpc-ext-authz for the upstream image and structure.
 
 ```yaml
 # Generic gRPC ext-authz server for the agent gateway.
@@ -1163,24 +1164,24 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: agentgateway-system
-  name: ext-authz
+  name: grpc-ext-authz
   labels:
-    app: ext-authz
+    app: grpc-ext-authz
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ext-authz
+      app: grpc-ext-authz
   template:
     metadata:
       labels:
-        app: ext-authz
-        app.kubernetes.io/name: ext-authz
+        app: grpc-ext-authz
+        app.kubernetes.io/name: grpc-ext-authz
     spec:
       containers:
       - image: ably7/grpc-ext-authz:latest
         imagePullPolicy: Always
-        name: ext-authz
+        name: grpc-ext-authz
         ports:
         - containerPort: 9000
         env:
@@ -1191,9 +1192,9 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: agentgateway-system
-  name: ext-authz
+  name: grpc-ext-authz
   labels:
-    app: ext-authz
+    app: grpc-ext-authz
 spec:
   ports:
   - port: 4444
@@ -1201,20 +1202,16 @@ spec:
     protocol: TCP
     appProtocol: kubernetes.io/h2c
   selector:
-    app: ext-authz
+    app: grpc-ext-authz
 ```
 
-Also add `kubectl apply -f k8s/gateway/ext-authz.yaml` to the `deploy_workloads()` function in the already-processed `install.sh` if ext-authz is enabled. Since install.sh was already processed from the template in Step 5, you will need to edit it to add the ext-authz apply command in the gateway section (after the line that applies `k8s/gateway/rate-limit.yaml`). Add:
-```bash
-  kubectl apply -f k8s/gateway/ext-authz.yaml --context $ctx
-  kubectl rollout status deploy/ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
-```
+The `install.sh` template already handles ext-authz conditionally — it checks for `k8s/gateway/ext-authz.yaml` at deploy time and applies it if present. No need to edit `install.sh` for this.
 
 ---
 
 ### 6n: `workshop.md`
 
-Generate a complete workshop document following the enrollment-agent's `workshop.md` structure. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/workshop.md`.
+Generate a complete workshop document following the enrollment-agent's `workshop.md` structure. Reference `https://github.com/ably77/enrollment-agent/blob/main/workshop.md`.
 
 The workshop should have 7 sections plus cleanup, reframed for the target vertical. If single-cluster mode was chosen, omit multi-cluster sections (section 2's multi-cluster connectivity and linking) and note that the demo runs on a single cluster.
 
@@ -1286,7 +1283,7 @@ Each section should include:
 
 ### 6o: `CLAUDE.md`
 
-Generate a CLAUDE.md for the output repo following the enrollment-agent's CLAUDE.md structure. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/CLAUDE.md`.
+Generate a CLAUDE.md for the output repo following the enrollment-agent's CLAUDE.md structure. Reference `https://github.com/ably77/enrollment-agent/blob/main/CLAUDE.md`.
 
 Must include:
 
@@ -1321,7 +1318,7 @@ Must include:
 
 ### 6p: MCP Server (conditional -- ONLY if MCP enabled)
 
-Generate the MCP server following the enrollment-agent's `services/financial-aid-mcp/` pattern. Reference `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/services/financial-aid-mcp/app.py`.
+Generate the MCP server following the enrollment-agent's `services/financial-aid-mcp/` pattern. Reference `https://github.com/ably77/enrollment-agent/blob/main/services/financial-aid-mcp/app.py`.
 
 **`services/{mcp_service_name}/app.py`** must include:
 - `from mcp.server.fastmcp import FastMCP`

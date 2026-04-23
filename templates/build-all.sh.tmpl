@@ -1,0 +1,70 @@
+#!/bin/bash
+set -e
+
+# Build and push ALL container images for the demo.
+# Run this once before ./install.sh on a fresh repo.
+# Usage: ./build-all.sh [version]
+# Example: ./build-all.sh 0.0.1
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+VERSION="${1:-0.0.1}"
+BUILDER="{{DOCKER_BUILDER}}"
+PLATFORM="linux/amd64,linux/arm64"
+REGISTRY="{{REGISTRY}}"
+PREFIX="{{IMAGE_PREFIX}}"
+
+# --- Verify buildx builder is healthy ---
+if ! docker buildx inspect "$BUILDER" &>/dev/null; then
+  echo "Builder '$BUILDER' not found — creating it..."
+  docker buildx create --name "$BUILDER" --driver docker-container
+fi
+if ! docker buildx inspect "$BUILDER" 2>/dev/null | grep -q "Status:.*running"; then
+  echo "Builder '$BUILDER' is not running — bootstrapping..."
+  docker buildx inspect "$BUILDER" --bootstrap &>/dev/null
+fi
+
+build_and_push() {
+  local name=$1
+  local dockerfile=$2
+  local context=$3
+  local tag="${REGISTRY}${PREFIX}-${name}:${VERSION}"
+  echo ""
+  echo "=== Building $tag ==="
+  docker buildx build --builder "$BUILDER" \
+    --platform "$PLATFORM" \
+    -t "$tag" --push \
+    -f "$dockerfile" "$context"
+  echo "=== Pushed $tag ==="
+}
+
+# --- Core services ---
+build_and_push "chatbot"          "demo-ui/Dockerfile"                       "."
+build_and_push "data-product-api" "services/data-product-api/Dockerfile"     "services/data-product-api/"
+build_and_push "graph-db-mock"    "services/graph-db-mock/Dockerfile"        "services/graph-db-mock/"
+
+# --- MCP server (if it exists) ---
+for mcp_dir in services/*-mcp; do
+  if [ -d "$mcp_dir" ] && [ -f "$mcp_dir/Dockerfile" ]; then
+    mcp_name=$(basename "$mcp_dir")
+    build_and_push "$mcp_name" "$mcp_dir/Dockerfile" "$mcp_dir/"
+  fi
+done
+
+echo ""
+echo "============================================"
+echo "  All images built and pushed (version: $VERSION)"
+echo "============================================"
+echo ""
+echo "Images:"
+echo "  ${REGISTRY}${PREFIX}-chatbot:${VERSION}"
+echo "  ${REGISTRY}${PREFIX}-data-product-api:${VERSION}"
+echo "  ${REGISTRY}${PREFIX}-graph-db-mock:${VERSION}"
+for mcp_dir in services/*-mcp; do
+  if [ -d "$mcp_dir" ] && [ -f "$mcp_dir/Dockerfile" ]; then
+    echo "  ${REGISTRY}${PREFIX}-$(basename "$mcp_dir"):${VERSION}"
+  fi
+done
+echo ""
+echo "Next: ./install.sh"
