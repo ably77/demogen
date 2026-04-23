@@ -55,9 +55,9 @@ Note: Even if the SE chooses 2 clusters, the generated install.sh auto-detects c
 > (e.g., `ly-builder`, `mybuilder`, `desktop-linux` — avoid `default` if using non-default Docker contexts like colima)
 
 ### Question 8: Namespace Names
-> What should the Kubernetes namespaces be named?
-> - **Backend** (e.g., `health-demo`)
-> - **Frontend** (e.g., `health-demo-frontend`)
+> What should the Kubernetes namespaces be named? Use generic names — org-specific branding belongs in env vars, not infrastructure.
+> - **Backend** (e.g., `demo-backend`, `demo`)
+> - **Frontend** (e.g., `demo-frontend`)
 
 ### Question 9: BYO Ext-Authz
 > Do you want BYO ext-authz enabled for this demo?
@@ -101,8 +101,8 @@ From the SE's answers, derive these template variables:
 | `{{NS_BACKEND}}` | Backend namespace from Q8 |
 | `{{NS_FRONTEND}}` | Frontend namespace from Q8 |
 | `{{REGISTRY}}` | Docker registry from Q7 (ensure trailing `/`) |
-| `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "health-demo") |
-| `{{ROUTE_NAME}}` | `{org_short_lower}-{entity_lower}` (e.g., "kaiser-patient") |
+| `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "demo-backend") |
+| `{{ROUTE_NAME}}` | `{entity_lower}` (e.g., "enrollment", "patient") — org-neutral so branding stays in env vars only |
 | `{{CHATBOT_SERVICE_NAME}}` | `{IMAGE_PREFIX}-chatbot` (e.g., "health-demo-chatbot") |
 | `{{CHATBOT_HOST}}` | `{entity_lower}.glootest.com` (e.g., "patient.glootest.com") -- ask SE to confirm or override |
 | `{{GRAFANA_HOST}}` | Default `grafana.glootest.com` -- ask SE to confirm or override |
@@ -153,7 +153,6 @@ Read each file from the demogen `templates/` directory and write it to the outpu
 | `templates/demo-ui/assets/.gitkeep` | `demo-ui/assets/.gitkeep` |
 | `templates/services/data-product-api/Dockerfile` | `services/data-product-api/Dockerfile` |
 | `templates/services/data-product-api/requirements.txt` | `services/data-product-api/requirements.txt` |
-| `templates/k8s/gateway/backend.yaml` | `k8s/gateway/backend.yaml` |
 | `templates/k8s/observability/*` | `k8s/observability/*` (all files in that directory) |
 | `templates/.gitignore` | `.gitignore` |
 
@@ -164,6 +163,7 @@ Read each `.tmpl` file from the demogen `templates/` directory, substitute ALL `
 | Source | Destination |
 |--------|-------------|
 | `templates/demo-ui/utils/sidebar.py.tmpl` | `demo-ui/utils/sidebar.py` |
+| `templates/k8s/gateway/backend.yaml.tmpl` | `k8s/gateway/backend.yaml` |
 | `templates/k8s/gateway/route.yaml.tmpl` | `k8s/gateway/route.yaml` |
 | `templates/install.sh.tmpl` | `install.sh` (make executable: `chmod +x`) |
 | `templates/cleanup.sh.tmpl` | `cleanup.sh` (make executable: `chmod +x`) |
@@ -172,7 +172,7 @@ Read each `.tmpl` file from the demogen `templates/` directory, substitute ALL `
 After writing each file, verify no `{{` placeholders remain:
 
 ```bash
-grep -rn '{{' {output_path}/install.sh {output_path}/cleanup.sh {output_path}/build-and-redeploy.sh {output_path}/demo-ui/utils/sidebar.py {output_path}/k8s/gateway/route.yaml
+grep -rn '{{' {output_path}/install.sh {output_path}/cleanup.sh {output_path}/build-and-redeploy.sh {output_path}/demo-ui/utils/sidebar.py {output_path}/k8s/gateway/route.yaml {output_path}/k8s/gateway/backend.yaml
 ```
 
 This should return no output. If any `{{` remains, fix the substitution.
@@ -908,9 +908,9 @@ metadata:
   namespace: agentgateway-system
 spec:
   targetRefs:
-  - name: agentgateway-proxy
+  - name: {route_name}
     group: gateway.networking.k8s.io
-    kind: Gateway
+    kind: HTTPRoute
   traffic:
     entRateLimit:
       global:
