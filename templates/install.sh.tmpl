@@ -465,6 +465,10 @@ spec:
   deployment:
     spec:
       replicas: 1
+      template:
+        metadata:
+          labels:
+            istio.io/dataplane-mode: ambient
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -668,10 +672,27 @@ deploy_workloads() {
 
   kubectl rollout status deploy/abac-ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
 
-  # Note: agentgateway-system is NOT enrolled in the ambient mesh.
-  # Enrolling it breaks internal traffic (proxy -> OTEL collector, proxy -> rate limiter)
-  # because ALLOW policies on the proxy deny internal pod-to-pod communication.
-  # The agent gateway is still governed through its own policies (guardrails, rate limits, access logs).
+  # --- MCP backend (if mcp-backend.yaml exists) ---
+  if [ -f k8s/gateway/mcp-backend.yaml ]; then
+    echo "=== Configuring MCP backend ==="
+    kubectl apply -f k8s/gateway/mcp-backend.yaml --context $ctx
+  fi
+
+  # --- MCP server (if manifest exists) ---
+  for mcp_manifest in k8s/services/*-mcp.yaml; do
+    if [ -f "$mcp_manifest" ]; then
+      echo "=== Deploying MCP server: $mcp_manifest ==="
+      kubectl apply -f "$mcp_manifest" --context $ctx
+      local mcp_deploy_name
+      mcp_deploy_name=$(basename "$mcp_manifest" .yaml)
+      kubectl rollout status deploy/$mcp_deploy_name -n {{NS_BACKEND}} --watch --timeout=120s --context $ctx
+    fi
+  done
+
+  # Note: agentgateway-system namespace is NOT enrolled in the ambient mesh,
+  # but the agentgateway proxy pod IS enrolled via istio.io/dataplane-mode: ambient
+  # in EnterpriseAgentgatewayParameters. This gives the proxy a SPIFFE identity
+  # so it can reach meshed services (like MCP servers) through the waypoint.
 
   # --- Deploy enrollment chatbot ---
   echo "=== Deploying enrollment chatbot ==="
