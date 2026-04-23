@@ -336,6 +336,7 @@ render_sidebar()
        )
    ```
    - When enabled, show info about testing: "Send `x-ext-authz: allow` header to allow, omit to deny"
+   - **Second sidebar checkbox: "Add x-ext-authz: allow header"** — only visible when the ext-authz policy is enabled. When checked, the chatbot adds `{"x-ext-authz": "allow"}` to `extra_headers` in `chat_completion` calls. When unchecked, the header is omitted and requests will be denied by ext-authz. This lets the SE demonstrate allow vs deny behavior directly from the UI without using curl.
 
 3. **Tool definition** for function calling:
    ```python
