@@ -543,7 +543,7 @@ Must include:
 5. **4-tab flow**:
    - **Tab 1: Enable Global Service** -- Label data-product-api and graph-db-mock with `solo.io/service-scope=global` and `PreferNetwork` annotation. Show explainer of what the labels do. Include "Check ServiceEntries" button. Show current deployments.
    - **Tab 2: Simulate Failover** -- Scale data-product-api to 0 replicas. Show warning about scaled state.
-   - **Tab 3: Verify Failover** -- Test health check and entity data lookup through the API. Show success/failure with domain-appropriate messages (e.g., "served from cluster2!"). Include link back to Homepage for end-to-end test.
+   - **Tab 3: Verify Failover** -- Test health check and entity data lookup through the `mesh.internal` hostname (not `svc.cluster.local`). Show success/failure with domain-appropriate messages (e.g., "served from cluster2!"). Include link back to Homepage for end-to-end test. Explain that the chatbot's `DATA_PRODUCT_URL` already uses `mesh.internal`, so the Homepage chatbot will automatically use the cluster2 endpoint.
    - **Tab 4: Restore** -- Scale data-product-api back to 1 replica. Wait for rollout. Verify health.
 
 6. **Demo Walkthrough** section with recommended flow instructions.
@@ -655,7 +655,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
 - Deployment:
   - Image: `{registry}{image_prefix}-chatbot:0.1.0`
   - Port: 8501
-  - Env vars: GATEWAY_IP (`agentgateway-proxy.agentgateway-system.svc.cluster.local`), GATEWAY_PORT (`8080`), GATEWAY_PROTOCOL (`http`), ORG_NAME, ORG_SHORT, APP_TITLE, DATA_PRODUCT_URL (`http://data-product-api.{ns_backend}.mesh.internal:8080`), GRAPH_DB_URL (`http://graph-db-mock.{ns_backend}.svc.cluster.local:8081`), NS_BACKEND, NS_FRONTEND
+  - Env vars: GATEWAY_IP (`agentgateway-proxy.agentgateway-system.svc.cluster.local`), GATEWAY_PORT (`8080`), GATEWAY_PROTOCOL (`http`), ORG_NAME, ORG_SHORT, APP_TITLE, DATA_PRODUCT_URL (`http://data-product-api.{ns_backend}.mesh.internal:8080` — uses `mesh.internal` not `svc.cluster.local` so cross-cluster failover works), GRAPH_DB_URL (`http://graph-db-mock.{ns_backend}.svc.cluster.local:8081`), NS_BACKEND, NS_FRONTEND
   - (If MCP enabled) Also include: MCP_URL (`http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080/{mcp_service_name}`)
   - Resources: requests cpu 100m/memory 256Mi, limits cpu 500m/memory 512Mi
 - Service: ClusterIP, port 8501
@@ -670,8 +670,9 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
   - Resources: requests cpu 100m/memory 128Mi, limits cpu 200m/memory 256Mi
 - Service:
   - Port 8080
-  - Labels include `solo.io/service-scope: global`
-  - Annotations include `networking.istio.io/traffic-distribution: PreferNetwork`
+  - Labels include `solo.io/service-scope: global` — makes the service discoverable across clusters via `.mesh.internal` DNS
+  - Annotations include `networking.istio.io/traffic-distribution: PreferNetwork` — routes to local endpoints when available, falls back to remote endpoints when local pods are unavailable
+  - These two settings are what enable cross-cluster failover. The chatbot's `DATA_PRODUCT_URL` uses `mesh.internal` to benefit from this.
 
 **`k8s/services/graph-db-mock.yaml`:**
 - ServiceAccount (name: `graph-db-mock`, namespace: `{ns_backend}`)
@@ -1225,11 +1226,12 @@ The workshop should have 7 sections plus cleanup, reframed for the target vertic
 
 2. **Istio Ambient Mesh**
    - Install on cluster1 (and cluster2 if multicluster mode) with shared root CA
-   - Deploy demo workloads (using correct namespace and service names)
+   - Deploy demo workloads on cluster1 (and cluster2 if multicluster mode — both clusters must have the same backend services for failover)
    - Verify mTLS enrollment
    - Multi-cluster connectivity and linking (ONLY if multicluster mode — omit entirely for single-cluster)
-   - Deploy waypoint for L7 traffic management
-   - AuthorizationPolicy -- Zero Trust (using the compliance regime framing)
+   - Deploy waypoint on cluster1 (and cluster2 if multicluster mode)
+   - AuthorizationPolicy -- Zero Trust: apply deny-all + allow policies to both clusters (loop over contexts if multicluster mode)
+   - Cross-cluster failover test (ONLY if multicluster mode): scale down data-product-api on cluster1, verify traffic fails over via `mesh.internal` hostname, restore. Explain that the chatbot's `DATA_PRODUCT_URL` uses `mesh.internal` (not `svc.cluster.local`) and the data-product-api Service has `solo.io/service-scope: global` + `networking.istio.io/traffic-distribution: PreferNetwork` — these are what enable automatic failover. Services using `svc.cluster.local` (like graph-db-mock) only see local endpoints.
 
 3. **Agent Gateway & Agent Mesh**
    - Install Enterprise Agentgateway
