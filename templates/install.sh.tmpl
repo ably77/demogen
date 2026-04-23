@@ -624,7 +624,7 @@ spec:
     tracing:
       backendRef:
         name: solo-enterprise-telemetry-collector
-        namespace: agentgateway-system
+        namespace: kagent
         port: 4317
       protocol: GRPC
       randomSampling: "true"
@@ -673,7 +673,7 @@ deploy_workloads() {
   if [ -f k8s/gateway/ext-authz.yaml ]; then
     echo "=== Deploying ext-authz server ==="
     kubectl apply -f k8s/gateway/ext-authz.yaml --context $ctx
-    kubectl rollout status deploy/ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
+    kubectl rollout status deploy/grpc-ext-authz -n agentgateway-system --watch --timeout=60s --context $ctx
   fi
 
   # --- MCP backend (if mcp-backend.yaml exists) ---

@@ -480,7 +480,13 @@ Must include these sections:
    - `WAYPOINT_TO_BACKENDS_YAML` -- waypoint SA to backends (L4)
    - Use correct namespace names, service account names, and service names from the derived variables
 
-3. **Architecture diagram placeholder**: If an `assets/mesh-architecture.html` file exists, include it. Otherwise skip this section. Do NOT error if the file is missing.
+3. **Architecture diagram placeholder**: Guard with `os.path.exists()` — do NOT use bare `open()`:
+   ```python
+   import os
+   if os.path.exists("assets/mesh-architecture.html"):
+       with open("assets/mesh-architecture.html", "r") as f:
+           st.components.v1.html(f.read(), height=900, scrolling=True)
+   ```
 
 4. **Section 1: Current Policy State** -- two-column display for both namespaces, showing `kubectl get authorizationpolicies` output
 
@@ -524,7 +530,13 @@ Must include:
 
 2. **Imports** from utils: theme, kubectl, config (DATA_PRODUCT_URL, NS_BACKEND, DEFAULT entity ID)
 
-3. **Architecture diagram placeholder**: If an `assets/multicluster-failover-architecture.html` file exists, include it. Otherwise skip.
+3. **Architecture diagram placeholder**: Guard with `os.path.exists()` — do NOT use bare `open()`:
+   ```python
+   import os
+   if os.path.exists("assets/multicluster-failover-architecture.html"):
+       with open("assets/multicluster-failover-architecture.html", "r") as f:
+           st.components.v1.html(f.read(), height=900, scrolling=True)
+   ```
 
 4. **Global service label YAML** constant for display:
    ```python
@@ -655,7 +667,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
   - `enterpriseagentgateway.solo.io` / `enterpriseagentgatewaypolicies`: get, list, create, apply, patch, delete
 - ClusterRoleBinding linking the SA to the ClusterRole
 - Deployment:
-  - Image: `{registry}{image_prefix}-chatbot:0.1.0`
+  - Image: `{registry}{image_prefix}-chatbot:0.0.1`
   - Port: 8501
   - Env vars: GATEWAY_IP (`agentgateway-proxy.agentgateway-system.svc.cluster.local`), GATEWAY_PORT (`8080`), GATEWAY_PROTOCOL (`http`), ORG_NAME, ORG_SHORT, APP_TITLE, DATA_PRODUCT_URL (`http://data-product-api.{ns_backend}.mesh.internal:8080` — uses `mesh.internal` not `svc.cluster.local` so cross-cluster failover works), GRAPH_DB_URL (`http://graph-db-mock.{ns_backend}.svc.cluster.local:8081`), NS_BACKEND, NS_FRONTEND
   - (If MCP enabled) Also include: MCP_URL (`http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080/{mcp_service_name}`)
@@ -1155,6 +1167,8 @@ spec:
 ### 6m: `k8s/gateway/ext-authz.yaml` (conditional -- ONLY if SE enabled ext-authz in Q9)
 
 Generate the generic gRPC ext-authz deployment + service. Reference https://github.com/ably77/grpc-ext-authz for the upstream image and structure.
+
+**CRITICAL: Use the EXACT YAML below. Do NOT copy naming from the enrollment-agent repo (which uses `abac-ext-authz`). The resource names MUST be `grpc-ext-authz` — the install.sh template expects this name for rollout status checks, and the Homepage ext-authz toggle references `grpc-ext-authz` in its EnterpriseAgentgatewayPolicy backendRef.**
 
 ```yaml
 # Generic gRPC ext-authz server for the agent gateway.
