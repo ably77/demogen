@@ -1232,12 +1232,19 @@ The workshop should have 7 sections plus cleanup, reframed for the target vertic
 
 1. **Prerequisites & Environment Setup**
    - Cluster setup: 1 cluster (single-cluster mode) or 2 clusters (multicluster mode). Note that install.sh auto-detects cluster2 and gracefully falls back to single-cluster if not available.
+   - Platform-specific callouts as blockquotes (matching the enrollment-agent pattern):
+     - **AWS/EKS:** Context renaming, node sizing (e.g., `m5.xlarge`), NLB hostname resolution note
+     - **GCP/GKE:** Context renaming, node sizing (e.g., `e2-standard-4`), note that GKE requires a `ResourceQuota` for `system-node-critical` pods and `global.platform: gke` on istio-cni (covered in Section 2)
    - CLI tools, license/API keys
    - Build container images commands using the generated registry/image names
    - Verification checkpoint
 
 2. **Istio Ambient Mesh**
    - Install on cluster1 (and cluster2 if multicluster mode) with shared root CA
+   - Platform-specific callouts before the istio-cni helm install (for each cluster):
+     - Include a commented-out `kubectl apply` block for the GKE `ResourceQuota` (`gcp-critical-pods` in `istio-system` for `system-node-critical` priority class)
+     - Add `#platform: gke` (commented out) under `global` in the istio-cni helm values with a "GKE users: uncomment" note
+     - Add a blockquote after the install block: **AWS/EKS** note (no extra steps needed), **GCP/GKE** note explaining the two extra steps and that `install.sh` handles them automatically
    - Deploy demo workloads on cluster1 (and cluster2 if multicluster mode — both clusters must have the same backend services for failover)
    - Verify mTLS enrollment
    - Multi-cluster connectivity and linking (ONLY if multicluster mode — omit entirely for single-cluster)
