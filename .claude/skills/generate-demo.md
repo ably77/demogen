@@ -25,6 +25,14 @@ If the path exists, write into it (preserve `.git/`, `.gitattributes`, etc.). If
 
 Note: Even if the SE chooses 2 clusters, the generated install.sh auto-detects cluster2 availability and gracefully degrades to single-cluster mode. This question determines whether the Multi-Cluster demo page is generated.
 
+### Question 1c: Base Hostname
+> What base domain should be used for hostnames? (default: `glootest.com`)
+>
+> Routes will be generated as `{entity}.{domain}`, `grafana.{domain}`, `ui.{domain}`.
+> If you use the default, you'll need to add `/etc/hosts` entries pointing to your load balancer IP.
+
+If the SE accepts the default, use `glootest.com`. Otherwise use whatever they provide (e.g., `example.com`, `demo.internal`).
+
 ### Question 2: Organization
 > What organization is this demo for?
 > - **Full name** (e.g., "Kaiser Permanente")
@@ -85,6 +93,7 @@ After all questions are answered, confirm the configuration with the SE before p
 > - Role: {advisor_role}
 > - Compliance: {regime}
 > - Clusters: {1 or 2} ({single-cluster / multicluster with failover})
+> - Base hostname: {base_domain} (routes: {entity}.{base_domain}, grafana.{base_domain}, ui.{base_domain})
 > - Registry: {registry}
 > - Builder: {docker_builder}
 > - Namespaces: {ns_backend}, {ns_frontend}
@@ -114,9 +123,10 @@ From the SE's answers, derive these template variables:
 | `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "demo-backend") |
 | `{{ROUTE_NAME}}` | `{entity_lower}` (e.g., "enrollment", "patient") — org-neutral so branding stays in env vars only |
 | `{{CHATBOT_SERVICE_NAME}}` | `{IMAGE_PREFIX}-chatbot` (e.g., "health-demo-chatbot") |
-| `{{CHATBOT_HOST}}` | `{entity_lower}.glootest.com` (e.g., "patient.glootest.com") -- ask SE to confirm or override |
-| `{{GRAFANA_HOST}}` | Default `grafana.glootest.com` -- ask SE to confirm or override |
-| `{{UI_HOST}}` | Default `ui.glootest.com` -- ask SE to confirm or override |
+| `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `glootest.com`) |
+| `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.glootest.com") |
+| `{{GRAFANA_HOST}}` | `grafana.{BASE_DOMAIN}` (e.g., "grafana.glootest.com") |
+| `{{UI_HOST}}` | `ui.{BASE_DOMAIN}` (e.g., "ui.glootest.com") |
 | `{{DOCKER_BUILDER}}` | Builder name from Q7 (e.g., "ly-builder"). Run `docker buildx ls` to list available builders if the SE is unsure. Avoid `default` when using non-default Docker contexts (colima, remote engines). |
 | `{{MCP_SERVICE_NAME}}` | Derived from MCP domain: lowercase, hyphenated (e.g., "financial-aid-mcp") — ONLY if MCP enabled |
 | `{{MCP_URL}}` | `http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080/{MCP_SERVICE_NAME}` — ONLY if MCP enabled |

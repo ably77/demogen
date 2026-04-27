@@ -16,7 +16,7 @@ cd demogen
 # (or just tell Claude: "generate a healthcare demo")
 ```
 
-The skill asks 9 questions about the target vertical and generates a complete repo.
+The skill asks questions about the target vertical and generates a complete repo.
 
 ## Project Structure
 

@@ -7,7 +7,7 @@ AI-powered demo generator for Solo.io. Generates complete, standalone demo repos
 1. Clone this repo
 2. Open in Claude Code
 3. Run `/generate-demo` (or ask Claude to generate a demo)
-4. Answer 9 questions about your target vertical
+4. Answer questions about your target vertical
 5. Get a complete repo — ready to `./install.sh`
 
 ## What Gets Generated
