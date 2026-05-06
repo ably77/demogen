@@ -727,9 +727,9 @@ deploy_workloads() {
   # in EnterpriseAgentgatewayParameters. This gives the proxy a SPIFFE identity
   # so it can reach meshed services (like MCP servers) through the waypoint.
 
-  # --- Deploy enrollment chatbot ---
-  echo "=== Deploying enrollment chatbot ==="
-  kubectl apply -f k8s/services/enrollment-chatbot.yaml --context $ctx
+  # --- Deploy chatbot ---
+  echo "=== Deploying chatbot ==="
+  kubectl apply -f k8s/services/{{CHATBOT_SERVICE_NAME}}.yaml --context $ctx
   kubectl rollout status deploy/{{CHATBOT_SERVICE_NAME}} -n {{NS_FRONTEND}} --watch --timeout=120s --context $ctx
 
   # --- Deploy ingress gateway ---

@@ -123,12 +123,14 @@ From the SE's answers, derive these template variables:
 | `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "demo-backend") |
 | `{{ROUTE_NAME}}` | `{entity_lower}` (e.g., "enrollment", "patient") — org-neutral so branding stays in env vars only |
 | `{{CHATBOT_SERVICE_NAME}}` | `{IMAGE_PREFIX}-chatbot` (e.g., "health-demo-chatbot") |
+| `{{CHATBOT_DISPLAY_NAME}}` | Short human-readable label for the chatbot box in architecture diagrams (e.g., "T-Life Chatbot", "Patient Advisor Chatbot", "Enrollment Chatbot"). Default rule: derive from the domain framing or app — keep it ≤ 3 words. Used by `mesh-architecture.html.tmpl` and `multicluster-failover-architecture.html.tmpl`. |
 | `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `glootest.com`) |
 | `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.glootest.com") |
 | `{{GRAFANA_HOST}}` | `grafana.{BASE_DOMAIN}` (e.g., "grafana.glootest.com") |
 | `{{UI_HOST}}` | `ui.{BASE_DOMAIN}` (e.g., "ui.glootest.com") |
 | `{{DOCKER_BUILDER}}` | Builder name from Q7 (e.g., "ly-builder"). Run `docker buildx ls` to list available builders if the SE is unsure. Avoid `default` when using non-default Docker contexts (colima, remote engines). |
 | `{{MCP_SERVICE_NAME}}` | Derived from MCP domain: lowercase, hyphenated (e.g., "financial-aid-mcp") — ONLY if MCP enabled |
+| `{{MCP_DISPLAY_NAME}}` | Short human-readable label for the MCP server box in `mesh-architecture.html.tmpl`. Title-case the MCP service name with sensible word breaks (e.g., `device-catalog-mcp` → "Device Catalog MCP", `financial-aid-mcp` → "Financial Aid MCP"). ONLY if MCP enabled. |
 | `{{MCP_URL}}` | `http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080/{MCP_SERVICE_NAME}` — ONLY if MCP enabled |
 
 Show the derived variables to the SE for confirmation before continuing.
@@ -207,11 +209,13 @@ Read each `.tmpl` file from the demogen `templates/` directory, substitute ALL `
 | `templates/build-and-redeploy.sh.tmpl` | `build-and-redeploy.sh` (make executable: `chmod +x`) |
 | `templates/build-all.sh.tmpl` | `build-all.sh` (make executable: `chmod +x`) |
 | `templates/k8s/gateway/mcp-backend.yaml.tmpl` | `k8s/gateway/mcp-backend.yaml` | (ONLY if MCP enabled) |
+| `templates/demo-ui/assets/mesh-architecture.html.tmpl` | `demo-ui/assets/mesh-architecture.html` | (ONLY if MCP enabled — diagram includes the MCP server box. For non-MCP demos, skip this file; the `1_Mesh_Policies.py` page guards on `os.path.exists()` and falls back gracefully.) |
+| `templates/demo-ui/assets/multicluster-failover-architecture.html.tmpl` | `demo-ui/assets/multicluster-failover-architecture.html` | (ONLY if 2 clusters chosen in Q1b — single-cluster demos don't render this page.) |
 
 After writing each file, verify no `{{` placeholders remain:
 
 ```bash
-grep -rn '{{' {output_path}/install.sh {output_path}/cleanup.sh {output_path}/build-and-redeploy.sh {output_path}/demo-ui/utils/sidebar.py {output_path}/k8s/gateway/route.yaml {output_path}/k8s/gateway/backend.yaml
+grep -rn '{{' {output_path}/install.sh {output_path}/cleanup.sh {output_path}/build-and-redeploy.sh {output_path}/demo-ui/utils/sidebar.py {output_path}/k8s/gateway/route.yaml {output_path}/k8s/gateway/backend.yaml {output_path}/demo-ui/assets/*.html
 ```
 
 This should return no output. If any `{{` remains, fix the substitution.
@@ -418,7 +422,7 @@ render_sidebar()
    - Chat input with domain-appropriate placeholder (e.g., "Ask about your appointments, diagnoses, or care plan...")
    - Build API messages: system prompt + history + current prompt
    - Call `chat_completion(api_messages, model=model, tools=TOOLS, extra_headers=extra_headers)`
-   - Handle tool calls (first call triggers tool, second call gets final response)
+   - **Tool-call loop (CRITICAL — must iterate until model returns no `tool_calls`)**: Combined-flow prompts (e.g., a customer asking "what's my eligibility AND what would the device cost with my trade-in?") often need 3+ tool calls in sequence — `get_customer_data`, then `search_devices`/`get_device_details`, then `check_trade_in_value`. A two-call pattern (first call → tools, second call → final answer) silently breaks: round 2 returns more `tool_calls`, the code reads `.content` (empty), and renders nothing. Use a bounded `for round_idx in range(MAX_TOOL_ROUNDS)` loop where `MAX_TOOL_ROUNDS = 5`. Each round: if `choice.get("tool_calls")`, call `process_tool_calls` and re-issue `chat_completion` with the appended tool results; otherwise capture `choice.get("content")` and break. After the loop, if no terminating round produced content, render a `st.warning(f"Stopped after {MAX_TOOL_ROUNDS} tool-call rounds...")`. Only save the final `(user, assistant)` pair to session state once after the loop terminates with content — never inside the loop.
    - **CRITICAL**: Only save messages to session state on success (200 status). Do NOT save on guardrail blocks.
    - Model defaults to "gpt-4o-mini" (or uses ext-authz model selection if enabled)
 

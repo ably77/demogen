@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{APP_TITLE}} — Mesh Authorization Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+  }
+  .canvas {
+    width: 1500px;
+    position: relative;
+  }
+  .title {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .title h1 { font-size: 24px; color: #e6edf3; font-weight: 600; }
+  .title p { font-size: 13px; color: #8b949e; }
+
+  /* SVG arrow layer */
+  #arrow-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Cluster box */
+  .cluster {
+    border: 1.5px solid #30363d;
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    margin-top: 50px;
+  }
+  .cluster-label {
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: #0d1117;
+    padding: 0 8px;
+    font-size: 12px;
+    color: #8b949e;
+  }
+
+  /* Namespace boxes */
+  .ns {
+    border: 1.5px dashed;
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+  .ns-label {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: #0d1117;
+    padding: 0 6px;
+    font-size: 11px;
+    font-family: monospace;
+  }
+  .ns-agw { border-color: #d29922; }
+  .ns-agw .ns-label { color: #d29922; }
+  .ns-frontend { border-color: #3b82f6; }
+  .ns-frontend .ns-label { color: #3b82f6; }
+  .ns-backend { border-color: #2ea043; }
+  .ns-backend .ns-label { color: #2ea043; }
+
+  /* Service boxes */
+  .svc {
+    background: #161b22;
+    border: 1.5px solid;
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .svc h3 { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
+  .svc .sa { font-size: 11px; font-family: monospace; color: #8b949e; }
+  .svc .desc { font-size: 11px; color: #8b949e; margin-top: 2px; }
+  .svc-agw { border-color: #d29922; }
+  .svc-frontend { border-color: #3b82f6; }
+  .svc-backend { border-color: #2ea043; }
+  .svc-waypoint { border-color: #58a6ff; background: #0d1a2e; }
+  .svc-external { border-color: #484f58; background: #161b22; }
+
+  /* Policy badges */
+  .policy {
+    display: inline-block;
+    font-size: 10px;
+    font-family: monospace;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #2ea043;
+    color: #2ea043;
+    background: #0d1117;
+    z-index: 2;
+    position: relative;
+  }
+  .policy-deny { border-color: #f85149; color: #f85149; }
+
+  /* Layout grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 280px 300px 460px 200px;
+    grid-template-rows: auto;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ztunnel bar */
+  .ztunnel {
+    border: 1.5px solid #58a6ff;
+    border-radius: 8px;
+    padding: 14px 24px;
+    text-align: center;
+    background: #0d1117;
+    margin-top: 30px;
+  }
+  .ztunnel h3 { font-size: 15px; color: #58a6ff; }
+  .ztunnel p { font-size: 11px; color: #8b949e; }
+
+  /* External / LLM */
+  .external-section {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
+  .ext-label { font-size: 11px; color: #8b949e; font-style: italic; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 24px;
+    font-size: 12px;
+    color: #8b949e;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-line { width: 30px; height: 3px; border-radius: 2px; }
+  .legend-line.allowed { background: #2ea043; }
+  .legend-line.blocked { background: #f85149; }
+  .legend-line.waypoint { background: #58a6ff; }
+  .legend-line.auth { background: #2ea043; border-top: 2px dashed #2ea043; background: none; height: 0; border-radius: 0; }
+  .legend-policy {
+    font-size: 10px; font-family: monospace;
+    padding: 2px 6px; border: 1px solid #2ea043; border-radius: 3px; color: #2ea043;
+  }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <div class="title">
+    <h1>Mesh Authorization Architecture</h1>
+    <p>Zero-trust enforcement with Istio Ambient Mesh + Waypoint L7 Policies</p>
+  </div>
+
+  <div class="cluster">
+    <span class="cluster-label">Kubernetes Cluster</span>
+
+    <div class="main-grid">
+      <!-- Column 1: agentgateway-system -->
+      <div>
+        <div class="ns ns-agw" style="min-height: 480px;">
+          <span class="ns-label">agentgateway-system</span>
+          <div class="svc svc-agw" id="ingress" style="margin-bottom: 20px;">
+            <h3>Ingress</h3>
+            <div class="sa">SA: ingress</div>
+          </div>
+          <div class="svc svc-agw" id="ext-auth" style="margin-top: 60px;">
+            <h3>Ext Auth Server</h3>
+            <div class="sa">SA: ext-authz</div>
+          </div>
+          <div class="svc svc-agw" id="agw" style="margin-top: 60px;">
+            <h3>Agent Gateway</h3>
+            <div class="sa">SA: agentgateway-proxy</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: {{NS_FRONTEND}} -->
+      <div>
+        <div class="ns ns-frontend" style="min-height: 160px;">
+          <span class="ns-label">{{NS_FRONTEND}}</span>
+          <div class="svc svc-frontend" id="chatbot">
+            <h3>{{CHATBOT_DISPLAY_NAME}}</h3>
+            <div class="sa">SA: {{CHATBOT_SERVICE_NAME}}</div>
+          </div>
+          <div style="margin-top: 12px; text-align: center;">
+            <span class="policy">ingress-to-chatbot (L4 ALLOW)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: {{NS_BACKEND}} -->
+      <div>
+        <div class="ns ns-backend" style="min-height: 480px;">
+          <span class="ns-label">{{NS_BACKEND}} (ambient mesh + waypoint)</span>
+          <div class="svc svc-backend" id="data-api" style="margin-bottom: 8px;">
+            <h3>Data Product API</h3>
+            <div class="sa">SA: data-product-api</div>
+          </div>
+          <div style="text-align: center; margin-bottom: 14px;">
+            <span class="policy">chatbot-to-data-product (L7 targetRef)</span>
+          </div>
+          <div class="svc svc-backend" id="graphdb" style="margin-bottom: 8px;">
+            <h3>Graph DB Mock</h3>
+            <div class="sa">SA: graph-db-mock</div>
+          </div>
+          <div style="text-align: center; margin-bottom: 14px;">
+            <span class="policy">data-product-to-graphdb (L7 targetRef)</span>
+          </div>
+          <div class="svc svc-backend" id="mcp-server" style="margin-bottom: 8px;">
+            <h3>{{MCP_DISPLAY_NAME}}</h3>
+            <div class="sa">SA: {{MCP_SERVICE_NAME}}</div>
+          </div>
+          <div style="text-align: center; margin-bottom: 14px;">
+            <span class="policy">gateway-to-{{MCP_SERVICE_NAME}} (L7 targetRef)</span>
+          </div>
+          <div style="text-align: center;">
+            <span class="policy policy-deny">deny-all (L4 baseline &mdash; blocks everything by default)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 4: Waypoint -->
+      <div style="display: flex; align-items: center; min-height: 480px;">
+        <div class="svc svc-waypoint" id="waypoint" style="width: 100%;">
+          <h3>Waypoint Proxy</h3>
+          <div class="desc">L7 policy enforcement</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ztunnel bar -->
+    <div class="ztunnel">
+      <h3>ztunnel (per-node data plane)</h3>
+      <p>Automatic mTLS | L4 policy enforcement | HBONE tunneling | No sidecars</p>
+    </div>
+  </div>
+
+  <!-- External: LLM Provider only -->
+  <div class="external-section">
+    <div class="svc svc-external" id="llm" style="width: 220px;">
+      <h3>LLM Provider</h3>
+      <div class="desc">OpenAI / Anthropic / AWS Bedrock / Vertex</div>
+    </div>
+    <div class="ext-label">external (outside cluster)</div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><span>Legend:</span></div>
+    <div class="legend-item"><div class="legend-line allowed"></div><span>Allowed (mesh)</span></div>
+    <div class="legend-item"><div class="legend-line blocked"></div><span>Blocked (403)</span></div>
+    <div class="legend-item"><div class="legend-line waypoint"></div><span>Waypoint-routed</span></div>
+    <div class="legend-item">
+      <svg width="30" height="12" style="overflow:visible"><line x1="0" y1="6" x2="30" y2="6" stroke="#2ea043" stroke-width="2.5" stroke-dasharray="6,4"/></svg>
+      <span>Auth Check (dashed)</span>
+    </div>
+    <div class="legend-item">
+      <svg width="30" height="12" style="overflow:visible"><line x1="0" y1="6" x2="30" y2="6" stroke="#d29922" stroke-width="2.5"/></svg>
+      <span>External traffic</span>
+    </div>
+    <div class="legend-item"><span class="legend-policy">AuthorizationPolicy</span></div>
+  </div>
+
+  <!-- Arrow SVG — populated by JS -->
+  <svg id="arrow-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ah-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#2ea043"/>
+      </marker>
+      <marker id="ah-green-start" markerWidth="10" markerHeight="7" refX="1" refY="3.5" orient="auto-start-reverse">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#2ea043"/>
+      </marker>
+      <marker id="ah-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#f85149"/>
+      </marker>
+      <marker id="ah-yellow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#d29922"/>
+      </marker>
+      <marker id="ah-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#58a6ff"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<script>
+// Draw arrows between actual DOM elements
+const canvas = document.getElementById('canvas');
+const svg = document.getElementById('arrow-svg');
+const canvasRect = canvas.getBoundingClientRect();
+
+function pos(id) {
+  const el = document.getElementById(id);
+  const r = el.getBoundingClientRect();
+  return {
+    cx: r.left + r.width / 2 - canvasRect.left,
+    cy: r.top + r.height / 2 - canvasRect.top,
+    left: r.left - canvasRect.left,
+    right: r.right - canvasRect.left,
+    top: r.top - canvasRect.top,
+    bottom: r.bottom - canvasRect.top,
+    w: r.width,
+    h: r.height
+  };
+}
+
+function makeLine(x1, y1, x2, y2, color, dash, markerEnd, markerStart) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '2.5');
+  if (dash) line.setAttribute('stroke-dasharray', '6,4');
+  const markerMap = { '#2ea043': 'ah-green', '#f85149': 'ah-red', '#d29922': 'ah-yellow', '#58a6ff': 'ah-cyan' };
+  if (markerEnd !== false) line.setAttribute('marker-end', `url(#${markerMap[color]})`);
+  if (markerStart) line.setAttribute('marker-start', `url(#ah-green-start)`);
+  svg.appendChild(line);
+}
+
+function makeLabel(x, y, text, color) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', x);
+  t.setAttribute('y', y);
+  t.setAttribute('fill', color);
+  t.setAttribute('font-size', '12');
+  t.setAttribute('font-weight', '600');
+  t.setAttribute('font-family', '-apple-system, BlinkMacSystemFont, sans-serif');
+  t.textContent = text;
+  svg.appendChild(t);
+}
+
+// Size SVG to match canvas
+svg.setAttribute('width', canvas.offsetWidth);
+svg.setAttribute('height', canvas.offsetHeight);
+svg.setAttribute('viewBox', `0 0 ${canvas.offsetWidth} ${canvas.offsetHeight}`);
+
+const ingress  = pos('ingress');
+const extAuth  = pos('ext-auth');
+const agw      = pos('agw');
+const chatbot  = pos('chatbot');
+const dataApi  = pos('data-api');
+const graphdb  = pos('graphdb');
+const mcpSvr   = pos('mcp-server');
+const waypoint = pos('waypoint');
+const llm      = pos('llm');
+
+// 1. Ingress → Chatbot (horizontal)
+makeLine(ingress.right, ingress.cy, chatbot.left, chatbot.cy, '#2ea043', false);
+
+// 2a. Ingress ↔ Ext Auth (bidirectional dashed green — auth check)
+//     Two parallel lines offset by ±10px horizontally
+makeLine(ingress.cx - 10, ingress.bottom, extAuth.cx - 10, extAuth.top, '#2ea043', true, true, false);
+makeLine(extAuth.cx + 10, extAuth.top, ingress.cx + 10, ingress.bottom, '#2ea043', true, true, false);
+makeLabel(ingress.cx + 16, (ingress.bottom + extAuth.top) / 2 + 4, 'Auth Check', '#2ea043');
+
+// 2b. Agent Gateway ↔ Ext Auth (bidirectional dashed green)
+makeLine(agw.cx - 10, agw.top, extAuth.cx - 10, extAuth.bottom, '#2ea043', true, true, false);
+makeLine(extAuth.cx + 10, extAuth.bottom, agw.cx + 10, agw.top, '#2ea043', true, true, false);
+
+// 3. Chatbot → Agent Gateway (diagonal SW, solid green — internal mesh traffic)
+makeLine(chatbot.left, chatbot.bottom, agw.right, agw.top, '#2ea043', false);
+makeLabel(agw.right + 40, agw.top - 35, 'LLM + MCP', '#2ea043');
+
+// 4. Chatbot → Data Product API (horizontal, green)
+makeLine(chatbot.right, chatbot.cy, dataApi.left, dataApi.cy, '#2ea043', false);
+makeLabel(chatbot.right + 12, chatbot.cy - 10, 'ALLOWED', '#2ea043');
+
+// 5. Chatbot → Graph DB (blocked diagonal)
+makeLine(chatbot.right, chatbot.bottom, graphdb.left, graphdb.cy, '#f85149', false);
+makeLabel(chatbot.right + 24, chatbot.bottom + 28, 'BLOCKED (403)', '#f85149');
+
+// 5b. Chatbot → {{MCP_DISPLAY_NAME}} (blocked diagonal — must go through gateway)
+makeLine(chatbot.right, chatbot.bottom + 10, mcpSvr.left, mcpSvr.cy, '#f85149', false);
+makeLabel(chatbot.right + 24, (chatbot.bottom + mcpSvr.cy) / 2 + 10, 'BLOCKED (403)', '#f85149');
+
+// 6. Data Product API → Graph DB (down)
+makeLine(dataApi.cx, dataApi.bottom, graphdb.cx, graphdb.top, '#2ea043', false);
+
+// 7. Agent Gateway → {{MCP_DISPLAY_NAME}} (diagonal, green solid — through mesh)
+makeLine(agw.right, agw.cy, mcpSvr.left, mcpSvr.cy, '#2ea043', false);
+makeLabel((agw.right + mcpSvr.left) / 2 - 30, (agw.cy + mcpSvr.cy) / 2 - 10, 'MCP Tools', '#2ea043');
+
+// 8. Data Product API → Waypoint
+makeLine(dataApi.right, dataApi.cy, waypoint.left, waypoint.cy - 20, '#58a6ff', false);
+
+// 9. Graph DB → Waypoint
+makeLine(graphdb.right, graphdb.cy, waypoint.left, waypoint.cy, '#58a6ff', false);
+
+// 10. {{MCP_DISPLAY_NAME}} → Waypoint
+makeLine(mcpSvr.right, mcpSvr.cy, waypoint.left, waypoint.cy + 20, '#58a6ff', false);
+
+// 11. Agent Gateway → LLM (straight down, solid yellow — external)
+makeLine(agw.cx, agw.bottom, llm.cx, llm.top, '#d29922', false);
+</script>
+</body>
+</html>
