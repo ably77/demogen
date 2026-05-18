@@ -120,9 +120,10 @@ From the SE's answers, derive these template variables:
 | `{{NS_BACKEND}}` | Backend namespace from Q8 |
 | `{{NS_FRONTEND}}` | Frontend namespace from Q8 |
 | `{{REGISTRY}}` | Docker registry from Q7 (ensure trailing `/`) |
-| `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "demo-backend") |
+| `{{IMAGE_PREFIX}}` | Same as backend namespace value (e.g., "demo-backend"). Used for backend service image names + the OpenAI secret. NOT used for the chatbot image — that uses `{{DEMO_SHORT}}` so the name reflects where the chatbot actually runs (the frontend namespace), not the backend. |
+| `{{DEMO_SHORT}}` | Strip the `-backend` suffix from `{{NS_BACKEND}}` (or equivalently `-frontend` from `{{NS_FRONTEND}}`). E.g., `bank-backend` → `bank`. Short demo identifier — used for the chatbot service/image name so it isn't misleadingly prefixed with `-backend`. |
 | `{{ROUTE_NAME}}` | `{entity_lower}` (e.g., "enrollment", "patient") — org-neutral so branding stays in env vars only |
-| `{{CHATBOT_SERVICE_NAME}}` | `{IMAGE_PREFIX}-chatbot` (e.g., "health-demo-chatbot") |
+| `{{CHATBOT_SERVICE_NAME}}` | `{DEMO_SHORT}-chatbot` (e.g., "bank-chatbot", "telco-chatbot"). Deliberately NOT prefixed with `-backend` — the chatbot deploys in the frontend namespace. |
 | `{{CHATBOT_DISPLAY_NAME}}` | Short human-readable label for the chatbot box in architecture diagrams (e.g., "T-Life Chatbot", "Patient Advisor Chatbot", "Enrollment Chatbot"). Default rule: derive from the domain framing or app — keep it ≤ 3 words. Used by `mesh-architecture.html.tmpl` and `multicluster-failover-architecture.html.tmpl`. |
 | `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `glootest.com`) |
 | `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.glootest.com") |
@@ -681,7 +682,7 @@ Generate 3 service manifests following the enrollment-agent's patterns. Referenc
   - `enterpriseagentgateway.solo.io` / `enterpriseagentgatewaypolicies`: get, list, create, apply, patch, delete
 - ClusterRoleBinding linking the SA to the ClusterRole
 - Deployment:
-  - Image: `{registry}{image_prefix}-chatbot:0.0.1`
+  - Image: `{registry}{demo_short}-chatbot:0.0.1` (uses `{demo_short}`, not `{image_prefix}`, so the published image name isn't misleadingly `-backend-chatbot`)
   - Port: 8501
   - Env vars: GATEWAY_IP (`agentgateway-proxy.agentgateway-system.svc.cluster.local`), GATEWAY_PORT (`8080`), GATEWAY_PROTOCOL (`http`), ORG_NAME, ORG_SHORT, APP_TITLE, DATA_PRODUCT_URL (`http://data-product-api.{ns_backend}.mesh.internal:8080` — uses `mesh.internal` not `svc.cluster.local` so cross-cluster failover works), GRAPH_DB_URL (`http://graph-db-mock.{ns_backend}.svc.cluster.local:8081`), NS_BACKEND, NS_FRONTEND
   - (If MCP enabled) Also include: MCP_URL (`http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080/{mcp_service_name}`)

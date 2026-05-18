@@ -14,6 +14,9 @@ BUILDER="{{DOCKER_BUILDER}}"
 PLATFORM="linux/amd64,linux/arm64"
 REGISTRY="{{REGISTRY}}"
 PREFIX="{{IMAGE_PREFIX}}"
+# CHATBOT_PREFIX uses {{DEMO_SHORT}} (not IMAGE_PREFIX) so the chatbot image isn't
+# misleadingly named `-backend-chatbot` — the chatbot runs in the frontend namespace.
+CHATBOT_PREFIX="{{DEMO_SHORT}}"
 
 # --- Verify buildx builder is healthy ---
 if ! docker buildx inspect "$BUILDER" &>/dev/null; then
@@ -29,7 +32,8 @@ build_and_push() {
   local name=$1
   local dockerfile=$2
   local context=$3
-  local tag="${REGISTRY}${PREFIX}-${name}:${VERSION}"
+  local prefix=${4:-$PREFIX}
+  local tag="${REGISTRY}${prefix}-${name}:${VERSION}"
   echo ""
   echo "=== Building $tag ==="
   docker buildx build --builder "$BUILDER" \
@@ -40,7 +44,7 @@ build_and_push() {
 }
 
 # --- Core services ---
-build_and_push "chatbot"          "demo-ui/Dockerfile"                       "."
+build_and_push "chatbot"          "demo-ui/Dockerfile"                       "."                                  "$CHATBOT_PREFIX"
 build_and_push "data-product-api" "services/data-product-api/Dockerfile"     "services/data-product-api/"
 build_and_push "graph-db-mock"    "services/graph-db-mock/Dockerfile"        "services/graph-db-mock/"
 
@@ -58,7 +62,7 @@ echo "  All images built and pushed (version: $VERSION)"
 echo "============================================"
 echo ""
 echo "Images:"
-echo "  ${REGISTRY}${PREFIX}-chatbot:${VERSION}"
+echo "  ${REGISTRY}${CHATBOT_PREFIX}-chatbot:${VERSION}"
 echo "  ${REGISTRY}${PREFIX}-data-product-api:${VERSION}"
 echo "  ${REGISTRY}${PREFIX}-graph-db-mock:${VERSION}"
 for mcp_dir in services/*-mcp; do

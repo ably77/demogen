@@ -429,9 +429,10 @@ From the SE's answers, derive these template variables:
 | `{{NS_BACKEND}}` | Backend namespace from Q8 |
 | `{{NS_FRONTEND}}` | Frontend namespace from Q8 |
 | `{{REGISTRY}}` | Docker registry from Q7 (ensure trailing `/`) |
-| `{{IMAGE_PREFIX}}` | Derived from backend namespace (e.g., "health-demo") |
+| `{{IMAGE_PREFIX}}` | Derived from backend namespace (e.g., "health-demo"). Used for backend service images + OpenAI secret; NOT used for the chatbot image. |
+| `{{DEMO_SHORT}}` | Strip `-backend` from `{{NS_BACKEND}}` (e.g., `bank-backend` → `bank`). Short demo identifier — used for the chatbot service/image name so it isn't misleadingly prefixed with `-backend`. |
 | `{{ROUTE_NAME}}` | Derived from `{org_short_lower}-{entity_lower}` (e.g., "kaiser-patient") |
-| `{{CHATBOT_SERVICE_NAME}}` | `{IMAGE_PREFIX}-chatbot` (e.g., "health-demo-chatbot") |
+| `{{CHATBOT_SERVICE_NAME}}` | `{DEMO_SHORT}-chatbot` (e.g., "bank-chatbot", "telco-chatbot") — chatbot deploys in the frontend namespace, so the name is deliberately NOT prefixed with `-backend`. |
 | `{{CHATBOT_HOST}}` | `{entity_lower}.glootest.com` (e.g., "patient.glootest.com"), ask SE to confirm or override |
 | `{{GRAFANA_HOST}}` | Default `grafana.glootest.com`, ask SE to confirm or override |
 | `{{UI_HOST}}` | Default `ui.glootest.com`, ask SE to confirm or override |
@@ -603,7 +604,7 @@ Generate 3 service manifests following the enrollment-agent's patterns exactly:
 
 **`k8s/services/{chatbot_service_name}.yaml`:**
 - ServiceAccount, ClusterRole (mesh policy RBAC), ClusterRoleBinding, Deployment, Service
-- Image: `{registry}{image_prefix}-chatbot:0.1.0`
+- Image: `{registry}{demo_short}-chatbot:0.1.0` (uses `{demo_short}`, not `{image_prefix}`, so the published image isn't misleadingly `-backend-chatbot`)
 - Env vars: GATEWAY_IP, GATEWAY_PORT, GATEWAY_PROTOCOL, ORG_NAME, ORG_SHORT, APP_TITLE, DATA_PRODUCT_URL (using `.mesh.internal` domain), GRAPH_DB_URL, NS_BACKEND, NS_FRONTEND
 - Port 8501, namespace: {ns_frontend}
 
