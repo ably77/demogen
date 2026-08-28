@@ -128,7 +128,7 @@ From the SE's answers, derive these template variables:
 | `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `glootest.com`) |
 | `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.glootest.com") |
 | `{{GRAFANA_HOST}}` | `grafana.{BASE_DOMAIN}` (e.g., "grafana.glootest.com") |
-| `{{UI_HOST}}` | `ui.{BASE_DOMAIN}` (e.g., "ui.glootest.com") |
+| `{{UI_HOST}}` | `agw-ui.{BASE_DOMAIN}` (e.g., "agw-ui.glootest.com") |
 | `{{DOCKER_BUILDER}}` | Builder name from Q7 (e.g., "ly-builder"). Run `docker buildx ls` to list available builders if the SE is unsure. Avoid `default` when using non-default Docker contexts (colima, remote engines). |
 | `{{MCP_SERVICE_NAME}}` | Derived from MCP domain: lowercase, hyphenated (e.g., "financial-aid-mcp") — ONLY if MCP enabled |
 | `{{MCP_DISPLAY_NAME}}` | Short human-readable label for the MCP server box in `mesh-architecture.html.tmpl`. Title-case the MCP service name with sensible word breaks (e.g., `device-catalog-mcp` → "Device Catalog MCP", `financial-aid-mcp` → "Financial Aid MCP"). ONLY if MCP enabled. |
