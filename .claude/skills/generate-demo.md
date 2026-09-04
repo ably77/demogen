@@ -26,12 +26,12 @@ If the path exists, write into it (preserve `.git/`, `.gitattributes`, etc.). If
 Note: Even if the SE chooses 2 clusters, the generated install.sh auto-detects cluster2 availability and gracefully degrades to single-cluster mode. This question determines whether the Multi-Cluster demo page is generated.
 
 ### Question 1c: Base Hostname
-> What base domain should be used for hostnames? (default: `glootest.com`)
+> What base domain should be used for hostnames? (default: `try-solo.io`)
 >
 > Routes will be generated as `{entity}.{domain}`, `grafana.{domain}`, `ui.{domain}`.
 > If you use the default, you'll need to add `/etc/hosts` entries pointing to your load balancer IP.
 
-If the SE accepts the default, use `glootest.com`. Otherwise use whatever they provide (e.g., `example.com`, `demo.internal`).
+If the SE accepts the default, use `try-solo.io`. Otherwise use whatever they provide (e.g., `example.com`, `demo.internal`).
 
 ### Question 2: Organization
 > What organization is this demo for?
@@ -125,10 +125,10 @@ From the SE's answers, derive these template variables:
 | `{{ROUTE_NAME}}` | `{entity_lower}` (e.g., "enrollment", "patient") — org-neutral so branding stays in env vars only |
 | `{{CHATBOT_SERVICE_NAME}}` | `{DEMO_SHORT}-chatbot` (e.g., "bank-chatbot", "telco-chatbot"). Deliberately NOT prefixed with `-backend` — the chatbot deploys in the frontend namespace. |
 | `{{CHATBOT_DISPLAY_NAME}}` | Short human-readable label for the chatbot box in architecture diagrams (e.g., "T-Life Chatbot", "Patient Advisor Chatbot", "Enrollment Chatbot"). Default rule: derive from the domain framing or app — keep it ≤ 3 words. Used by `mesh-architecture.html.tmpl` and `multicluster-failover-architecture.html.tmpl`. |
-| `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `glootest.com`) |
-| `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.glootest.com") |
-| `{{GRAFANA_HOST}}` | `grafana.{BASE_DOMAIN}` (e.g., "grafana.glootest.com") |
-| `{{UI_HOST}}` | `agw-ui.{BASE_DOMAIN}` (e.g., "agw-ui.glootest.com") |
+| `{{BASE_DOMAIN}}` | Base hostname domain from Q1c (default: `try-solo.io`) |
+| `{{CHATBOT_HOST}}` | `{entity_lower}.{BASE_DOMAIN}` (e.g., "patient.try-solo.io") |
+| `{{GRAFANA_HOST}}` | `grafana.{BASE_DOMAIN}` (e.g., "grafana.try-solo.io") |
+| `{{UI_HOST}}` | `agw-ui.{BASE_DOMAIN}` (e.g., "agw-ui.try-solo.io") |
 | `{{DOCKER_BUILDER}}` | Builder name from Q7 (e.g., "ly-builder"). Run `docker buildx ls` to list available builders if the SE is unsure. Avoid `default` when using non-default Docker contexts (colima, remote engines). |
 | `{{MCP_SERVICE_NAME}}` | Derived from MCP domain: lowercase, hyphenated (e.g., "financial-aid-mcp") — ONLY if MCP enabled |
 | `{{MCP_DISPLAY_NAME}}` | Short human-readable label for the MCP server box in `mesh-architecture.html.tmpl`. Title-case the MCP service name with sensible word breaks (e.g., `device-catalog-mcp` → "Device Catalog MCP", `financial-aid-mcp` → "Financial Aid MCP"). ONLY if MCP enabled. |

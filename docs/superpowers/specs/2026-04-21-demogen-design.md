@@ -157,9 +157,9 @@ These are substituted into `.tmpl` files:
 | `{{REGISTRY}}` | Question 7 | ably7/ |
 | `{{IMAGE_PREFIX}}` | Derived from domain | health-demo |
 | `{{ROUTE_NAME}}` | Derived from domain | kaiser-patient |
-| `{{GRAFANA_HOST}}` | Derived (default: grafana.glootest.com, SE can override) | grafana.glootest.com |
-| `{{UI_HOST}}` | Derived (default: ui.glootest.com, SE can override) | ui.glootest.com |
-| `{{CHATBOT_HOST}}` | Derived from ORG_SHORT (default: `{short}.glootest.com`, SE can override) | patient.glootest.com |
+| `{{GRAFANA_HOST}}` | Derived (default: grafana.try-solo.io, SE can override) | grafana.try-solo.io |
+| `{{UI_HOST}}` | Derived (default: ui.try-solo.io, SE can override) | ui.try-solo.io |
+| `{{CHATBOT_HOST}}` | Derived from ORG_SHORT (default: `{short}.try-solo.io`, SE can override) | patient.try-solo.io |
 
 ## Generated Files
 

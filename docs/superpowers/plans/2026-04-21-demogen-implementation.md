@@ -183,8 +183,8 @@ Create the `.tmpl` files that use `{{PLACEHOLDER}}` variable substitution. These
 - [ ] **Step 1: Create sidebar.py.tmpl**
 
 Based on enrollment-agent's `demo-ui/utils/sidebar.py`. Replace:
-- `ui.glootest.com` → `{{UI_HOST}}`
-- `grafana.glootest.com` → `{{GRAFANA_HOST}}`
+- `ui.try-solo.io` → `{{UI_HOST}}`
+- `grafana.try-solo.io` → `{{GRAFANA_HOST}}`
 
 Write to `templates/demo-ui/utils/sidebar.py.tmpl`:
 
@@ -275,9 +275,9 @@ Based on enrollment-agent's `install.sh` (892 lines). Replace all hardcoded name
 - `enrollment-chatbot` → `{{CHATBOT_SERVICE_NAME}}`
 - `wgu-demo-waypoint` → `{{NS_BACKEND}}-waypoint`
 - `Enrollment Agent Demo` → `{{APP_TITLE}} Demo`
-- `enroll.glootest.com` → `{{CHATBOT_HOST}}`
-- `grafana.glootest.com` → `{{GRAFANA_HOST}}`
-- `ui.glootest.com` → `{{UI_HOST}}`
+- `enroll.try-solo.io` → `{{CHATBOT_HOST}}`
+- `grafana.try-solo.io` → `{{GRAFANA_HOST}}`
+- `ui.try-solo.io` → `{{UI_HOST}}`
 
 Read `/Users/alexly-solo/Desktop/solo/solo-github/enrollment-agent/install.sh`, make the substitutions above, and write to `templates/install.sh.tmpl`.
 
@@ -433,9 +433,9 @@ From the SE's answers, derive these template variables:
 | `{{DEMO_SHORT}}` | Strip `-backend` from `{{NS_BACKEND}}` (e.g., `bank-backend` → `bank`). Short demo identifier — used for the chatbot service/image name so it isn't misleadingly prefixed with `-backend`. |
 | `{{ROUTE_NAME}}` | Derived from `{org_short_lower}-{entity_lower}` (e.g., "kaiser-patient") |
 | `{{CHATBOT_SERVICE_NAME}}` | `{DEMO_SHORT}-chatbot` (e.g., "bank-chatbot", "telco-chatbot") — chatbot deploys in the frontend namespace, so the name is deliberately NOT prefixed with `-backend`. |
-| `{{CHATBOT_HOST}}` | `{entity_lower}.glootest.com` (e.g., "patient.glootest.com"), ask SE to confirm or override |
-| `{{GRAFANA_HOST}}` | Default `grafana.glootest.com`, ask SE to confirm or override |
-| `{{UI_HOST}}` | Default `ui.glootest.com`, ask SE to confirm or override |
+| `{{CHATBOT_HOST}}` | `{entity_lower}.try-solo.io` (e.g., "patient.try-solo.io"), ask SE to confirm or override |
+| `{{GRAFANA_HOST}}` | Default `grafana.try-solo.io`, ask SE to confirm or override |
+| `{{UI_HOST}}` | Default `ui.try-solo.io`, ask SE to confirm or override |
 | `{{DOCKER_BUILDER}}` | Default `default`, ask SE if they have a named buildx builder |
 
 ## Step 3: Create Output Directory
